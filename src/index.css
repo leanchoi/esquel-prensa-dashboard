@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-bg-primary: #f8fafc;
+    --color-bg-surface: #ffffff;
+    --color-text-main: #0f172a;
+    --color-text-muted: #64748b;
+    --color-border: #e2e8f0;
+  }
+
+  .dark {
+    --color-bg-primary: #0b0f19;
+    --color-bg-surface: #131b2e;
+    --color-text-main: #f8fafc;
+    --color-text-muted: #94a3b8;
+    --color-border: #1e293b;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-main);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+  }
+}
+
+/* Compact table rules per user preferences */
+.table-compact th, 
+.table-compact td {
+  padding: 0.5rem 0.75rem;
+}
+
+/* Modal mobile safe dvh viewport per user preferences */
+.modal-mobile-safe {
+  max-height: 90dvh;
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+/* Translucent badges for dark mode, crisp contrast in light mode */
+.badge-translucent {
+  backdrop-filter: blur(4px);
+}
