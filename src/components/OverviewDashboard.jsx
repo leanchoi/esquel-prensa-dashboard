@@ -8,9 +8,11 @@ import {
   Calendar,
   Layers, 
   CheckCircle2, 
-  AlertCircle,
-  HelpCircle,
-  BarChart2
+  BarChart2,
+  Globe,
+  MapPin,
+  Mountain,
+  Scale
 } from 'lucide-react';
 import {
   BarChart,
@@ -30,9 +32,49 @@ import {
 } from 'recharts';
 
 export default function OverviewDashboard({ notes, clippings, mediaList, onSelectNote, onSelectMedia }) {
-  const [selectedMonthFilter, setSelectedMonthFilter] = useState('ALL');
+  // Segmentation mode: 'all', 'local', 'provincial', 'nacional', 'internacional', 'compare'
+  const [segmentMode, setSegmentMode] = useState('all');
 
-  // Month aggregations
+  // Helpers to identify media scope
+  const isLocalClip = (c) => {
+    const m = (c.media || '').toLowerCase();
+    return (c.category && c.category.includes('Local')) || 
+           m.includes('eqs') || m.includes('red 43') || m.includes('del lago') || 
+           m.includes('la portada') || m.includes('canal 4') || m.includes('turismo esquel');
+  };
+
+  const isProvincialClip = (c) => {
+    return (c.category && c.category.includes('Provincial')) && !isLocalClip(c);
+  };
+
+  const isNacionalClip = (c) => {
+    return (c.category && c.category.includes('Nacional')) && !isLocalClip(c);
+  };
+
+  const isInternacionalClip = (c) => {
+    return (c.category && (c.category.includes('Binacional') || c.category.includes('Internacional')));
+  };
+
+  // Pre-calculated arena counts
+  const arenaTotals = useMemo(() => {
+    let local = 0, provincial = 0, nacional = 0, internacional = 0;
+    clippings.forEach(c => {
+      if (isLocalClip(c)) local++;
+      else if (isProvincialClip(c)) provincial++;
+      else if (isInternacionalClip(c)) internacional++;
+      else nacional++;
+    });
+    return {
+      local,
+      provincial,
+      nacional,
+      internacional,
+      otros: provincial + nacional + internacional,
+      total: clippings.length
+    };
+  }, [clippings]);
+
+  // Month aggregations with segmentation data
   const monthlyData = useMemo(() => {
     const months = [
       { name: 'Ene', fullName: 'ENERO', order: 1 },
@@ -50,29 +92,51 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
       const notesInMonth = notes.filter(n => (n.month || '').toUpperCase().includes(m.fullName));
       const clippingsInMonth = clippings.filter(c => {
         const cMonth = (c.month || '').toUpperCase();
-        return cMonth.includes(m.fullName) || (m.name === 'Ene' && cMonth.includes('ENERO-FEBRERO')) || (m.name === 'Feb' && cMonth.includes('ENERO-FEBRERO'));
+        return cMonth.includes(m.fullName) || 
+               (m.name === 'Ene' && cMonth.includes('ENERO-FEBRERO')) || 
+               (m.name === 'Feb' && cMonth.includes('ENERO-FEBRERO'));
       });
+
+      const totalClips = clippingsInMonth.length;
+      const localClips = clippingsInMonth.filter(isLocalClip).length;
+      const provClips = clippingsInMonth.filter(isProvincialClip).length;
+      const nacClips = clippingsInMonth.filter(isNacionalClip).length;
+      const intClips = clippingsInMonth.filter(isInternacionalClip).length;
+      const otrosClips = totalClips - localClips;
+
+      const nNotes = notesInMonth.length || 1; // avoid division by zero
+
       return {
         mes: m.name,
         fullName: m.fullName,
         notasEmitidas: notesInMonth.length,
-        impactosClipping: clippingsInMonth.length,
-        promedioReplicas: notesInMonth.length > 0 ? +(clippingsInMonth.length / notesInMonth.length).toFixed(1) : 0
+        // Absolute counts
+        clippingsTotal: totalClips,
+        clippingsLocal: localClips,
+        clippingsProvincial: provClips,
+        clippingsNacional: nacClips,
+        clippingsInternacional: intClips,
+        clippingsOtros: otrosClips,
+        // Replicability Indices (Multipliers per press release)
+        indiceTotal: +(totalClips / nNotes).toFixed(1),
+        indiceLocal: +(localClips / nNotes).toFixed(1),
+        indiceProvincial: +(provClips / nNotes).toFixed(1),
+        indiceNacional: +(nacClips / nNotes).toFixed(1),
+        indiceInternacional: +(intClips / nNotes).toFixed(1),
+        indiceOtros: +(otrosClips / nNotes).toFixed(1),
       };
     });
   }, [notes, clippings]);
 
   // Weekly estimation (4 weeks per month)
   const weeklyData = useMemo(() => {
-    // Generate chronological weeks
     const weeks = [];
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep'];
     monthNames.forEach((m, mIdx) => {
       const monthObj = monthlyData[mIdx];
       const nTotal = monthObj ? monthObj.notasEmitidas : 0;
-      const cTotal = monthObj ? monthObj.impactosClipping : 0;
+      const cTotal = monthObj ? monthObj.clippingsTotal : 0;
       for (let w = 1; w <= 4; w++) {
-        // distribute reasonably
         const nW = Math.round(nTotal / 4);
         const cW = Math.round(cTotal / 4);
         weeks.push({
@@ -87,21 +151,13 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
 
   // Geographic scope distribution
   const geoScopeData = useMemo(() => {
-    const counts = {
-      'Local (Esquel / Cordillera)': 0,
-      'Provincial (Chubut / Patagonia)': 0,
-      'Nacional / Especializado': 0,
-      'Internacional / Binacional': 0,
-    };
-    clippings.forEach(c => {
-      if (counts[c.category] !== undefined) {
-        counts[c.category]++;
-      } else {
-        counts['Nacional / Especializado']++;
-      }
-    });
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [clippings]);
+    return [
+      { name: 'Local (Esquel / Cordillera)', value: arenaTotals.local },
+      { name: 'Provincial (Chubut / Patagonia)', value: arenaTotals.provincial },
+      { name: 'Nacional / Especializado', value: arenaTotals.nacional },
+      { name: 'Internacional / Binacional (Chile)', value: arenaTotals.internacional },
+    ];
+  }, [arenaTotals]);
 
   // Thematic groups distribution
   const thematicData = useMemo(() => {
@@ -120,15 +176,84 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
   const totalClippings = clippings.length;
   const highReplicability = notes.filter(n => n.replicabilityLevel === 'Alta').length;
   const mediumReplicability = notes.filter(n => n.replicabilityLevel === 'Media').length;
-  const zeroReplicability = notes.filter(n => n.replicabilityLevel === 'Baja / Sin registro').length;
   const avgMultiplier = (totalClippings / (totalNotes || 1)).toFixed(1);
 
-  const PIE_COLORS = ['#0284c7', '#3b82f6', '#8b5cf6', '#10b981'];
+  const PIE_COLORS = ['#0284c7', '#6366f1', '#a855f7', '#14b8a6'];
 
   // Top viral notes
   const topNotes = useMemo(() => {
     return [...notes].sort((a, b) => (b.clippingCount || 0) - (a.clippingCount || 0)).slice(0, 6);
   }, [notes]);
+
+  // Configuration for current segmentation view
+  const segmentConfig = useMemo(() => {
+    switch (segmentMode) {
+      case 'local':
+        return {
+          title: 'Segmento: Medios Locales de Esquel',
+          subtitle: 'EQS Notas, Red 43, FM del Lago, Diario La Portada, Canal 4 Esquel y Turismo Esquel',
+          dataKeyBar: 'clippingsLocal',
+          barName: 'Clippings Medios Locales',
+          barColor: '#0284c7',
+          dataKeyLine: 'indiceLocal',
+          lineName: 'Índice Replicabilidad Local',
+          lineColor: '#f59e0b'
+        };
+      case 'provincial':
+        return {
+          title: 'Segmento: Medios Provinciales (Chubut / Patagonia)',
+          subtitle: 'Diario El Chubut, ADN Sur, Cholila Online, Radio 3, Diario Jornada, LU17, Río Negro, etc.',
+          dataKeyBar: 'clippingsProvincial',
+          barName: 'Clippings Provinciales (Chubut)',
+          barColor: '#6366f1',
+          dataKeyLine: 'indiceProvincial',
+          lineName: 'Índice Replicabilidad Provincial',
+          lineColor: '#f59e0b'
+        };
+      case 'nacional':
+        return {
+          title: 'Segmento: Medios Nacionales y Especializados',
+          subtitle: 'Radio Continental, Meteored, The Post Arg, Destino Córdoba, Cadena 3, Municipios de Argentina',
+          dataKeyBar: 'clippingsNacional',
+          barName: 'Clippings Nacionales',
+          barColor: '#a855f7',
+          dataKeyLine: 'indiceNacional',
+          lineName: 'Índice Replicabilidad Nacional',
+          lineColor: '#f59e0b'
+        };
+      case 'internacional':
+        return {
+          title: 'Segmento: Internacional / Binacional (Chile)',
+          subtitle: 'Diario Binacional (Chile) y medios de la Patagonia Chilena',
+          dataKeyBar: 'clippingsInternacional',
+          barName: 'Clippings Binacionales Chile',
+          barColor: '#14b8a6',
+          dataKeyLine: 'indiceInternacional',
+          lineName: 'Índice Replicabilidad Chile',
+          lineColor: '#f59e0b'
+        };
+      case 'compare':
+        return {
+          title: 'Comparativa de Incidencia: Medios Locales vs Otros Medios',
+          subtitle: 'Compara mes a mes el volumen y tasa de réplica en la cordillera frente al resto de la provincia y país',
+          barColorLocal: '#0284c7',
+          barColorOtros: '#8b5cf6',
+          lineColorLocal: '#0284c7',
+          lineColorOtros: '#f59e0b'
+        };
+      default: // 'all'
+        return {
+          title: 'Consolidado Global: Todos los Medios',
+          subtitle: 'Picos de cobertura en Abril (Eclipse 2027) y Septiembre (FIT + Primavera)',
+          dataKeyBar: 'clippingsTotal',
+          barName: 'Clippings Replicados (Total)',
+          barColor: '#10b981',
+          dataKeyLine: 'indiceTotal',
+          lineName: 'Índice Replicabilidad Total',
+          lineColor: '#f59e0b'
+        };
+    }
+  }, [segmentMode]);
 
   return (
     <div className="space-y-6">
@@ -213,84 +338,310 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
         </div>
       </div>
 
+      {/* ARENAS TERRITORIALES CARDS (LOCAL VS OTROS) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Local */}
+        <div 
+          onClick={() => setSegmentMode('local')}
+          className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+            segmentMode === 'local'
+              ? 'bg-sky-50 dark:bg-sky-950/50 border-sky-500 shadow-sm ring-1 ring-sky-500'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-sky-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400 flex items-center space-x-1">
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Arena Local</span>
+            </span>
+            <span className="text-[10px] font-bold text-slate-500">
+              {Math.round((arenaTotals.local / arenaTotals.total) * 100)}%
+            </span>
+          </div>
+          <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            {arenaTotals.local} <span className="text-xs font-normal text-slate-400">impactos</span>
+          </div>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate mt-0.5">
+            EQS, Red 43, FM Lago, Portada, Canal 4
+          </span>
+        </div>
+
+        {/* Provincial */}
+        <div 
+          onClick={() => setSegmentMode('provincial')}
+          className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+            segmentMode === 'provincial'
+              ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-500 shadow-sm ring-1 ring-indigo-500'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-indigo-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center space-x-1">
+              <Mountain className="w-3.5 h-3.5" />
+              <span>Arena Provincial</span>
+            </span>
+            <span className="text-[10px] font-bold text-slate-500">
+              {Math.round((arenaTotals.provincial / arenaTotals.total) * 100)}%
+            </span>
+          </div>
+          <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            {arenaTotals.provincial} <span className="text-xs font-normal text-slate-400">impactos</span>
+          </div>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate mt-0.5">
+            El Chubut, ADN Sur, Cholila, Radio 3
+          </span>
+        </div>
+
+        {/* Nacional */}
+        <div 
+          onClick={() => setSegmentMode('nacional')}
+          className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+            segmentMode === 'nacional'
+              ? 'bg-purple-50 dark:bg-purple-950/50 border-purple-500 shadow-sm ring-1 ring-purple-500'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-purple-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 flex items-center space-x-1">
+              <Globe className="w-3.5 h-3.5" />
+              <span>Arena Nacional</span>
+            </span>
+            <span className="text-[10px] font-bold text-slate-500">
+              {Math.round((arenaTotals.nacional / arenaTotals.total) * 100)}%
+            </span>
+          </div>
+          <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            {arenaTotals.nacional} <span className="text-xs font-normal text-slate-400">impactos</span>
+          </div>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate mt-0.5">
+            Continental, Meteored, The Post, Cba
+          </span>
+        </div>
+
+        {/* Internacional */}
+        <div 
+          onClick={() => setSegmentMode('internacional')}
+          className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+            segmentMode === 'internacional'
+              ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 shadow-sm ring-1 ring-teal-500'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center space-x-1">
+              <Compass className="w-3.5 h-3.5" />
+              <span>Internacional (Chile)</span>
+            </span>
+            <span className="text-[10px] font-bold text-slate-500">
+              {Math.round((arenaTotals.internacional / arenaTotals.total) * 100)}%
+            </span>
+          </div>
+          <div className="text-xl font-black text-slate-900 dark:text-white mt-1">
+            {arenaTotals.internacional} <span className="text-xs font-normal text-slate-400">impactos</span>
+          </div>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate mt-0.5">
+            Diario Binacional y medios chilenos
+          </span>
+        </div>
+      </div>
+
       {/* Main Charts Row: Monthly Production & Clippings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Monthly evolution */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-2">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <BarChart2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>Evolución Mensual: Producción de Notas vs Impactos de Clipping</span>
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Picos de cobertura en Abril (Eclipse 2027) y Septiembre (FIT + Primavera)
-              </p>
+          {/* Header of Chart with Segment Selector Buttons */}
+          <div className="pb-4 border-b border-slate-100 dark:border-slate-800 space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <BarChart2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>{segmentConfig.title}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {segmentConfig.subtitle}
+                </p>
+              </div>
+
+              {/* Axis indicator badges */}
+              <div className="flex items-center space-x-1.5 shrink-0">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  Eje Izq: Volumen
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                  Eje Der: Índice Replicabilidad (x)
+                </span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                Eje Izq: Volumen
-              </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                Eje Der: Índice Replicabilidad (x)
-              </span>
+
+            {/* SEGMENTATION BUTTONS ROW */}
+            <div className="flex items-center space-x-1.5 overflow-x-auto text-xs pb-1 no-scrollbar pt-1">
+              <button
+                onClick={() => setSegmentMode('all')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1 border ${
+                  segmentMode === 'all'
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:border-slate-300'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Todos los Medios</span>
+              </button>
+
+              <button
+                onClick={() => setSegmentMode('local')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1 border ${
+                  segmentMode === 'local'
+                    ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:border-sky-300'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Medios Locales ({arenaTotals.local})</span>
+              </button>
+
+              <button
+                onClick={() => setSegmentMode('provincial')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1 border ${
+                  segmentMode === 'provincial'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:border-indigo-300'
+                }`}
+              >
+                <Mountain className="w-3.5 h-3.5" />
+                <span>Provincial ({arenaTotals.provincial})</span>
+              </button>
+
+              <button
+                onClick={() => setSegmentMode('nacional')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1 border ${
+                  segmentMode === 'nacional'
+                    ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:border-purple-300'
+                }`}
+              >
+                <span>🇦🇷 Nacional ({arenaTotals.nacional})</span>
+              </button>
+
+              <button
+                onClick={() => setSegmentMode('internacional')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1 border ${
+                  segmentMode === 'internacional'
+                    ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-transparent hover:border-teal-300'
+                }`}
+              >
+                <span>🇨🇱 Chile ({arenaTotals.internacional})</span>
+              </button>
+
+              <button
+                onClick={() => setSegmentMode('compare')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1 border ${
+                  segmentMode === 'compare'
+                    ? 'bg-blue-700 text-white border-blue-700 shadow-xs'
+                    : 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-100'
+                }`}
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span>Comparativa: Locales vs Otros</span>
+              </button>
             </div>
           </div>
 
           <div className="h-72 mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={monthlyData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
-                <XAxis dataKey="mes" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                
-                {/* Eje Y Principal (Izquierdo): Volumen de Notas y Clippings */}
-                <YAxis 
-                  yAxisId="left" 
-                  stroke="#94a3b8" 
-                  fontSize={11} 
-                  tickLine={false} 
-                />
-
-                {/* Eje Y Secundario (Derecho): Índice de Replicabilidad / Correlación */}
-                <YAxis 
-                  yAxisId="right" 
-                  orientation="right" 
-                  stroke="#f59e0b" 
-                  fontSize={11} 
-                  tickLine={false}
-                  tickFormatter={(val) => `${val}x`}
-                  domain={[0, 'auto']}
-                />
-
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
-                    borderColor: '#334155', 
-                    borderRadius: '8px', 
-                    fontSize: '12px',
-                    color: '#f8fafc' 
-                  }} 
-                  formatter={(value, name) => {
-                    if (name === 'Índice de Replicabilidad') {
-                      return [`${value}x (impactos por gacetilla)`, name];
-                    }
-                    return [value, name];
-                  }}
-                />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                <Bar yAxisId="left" dataKey="notasEmitidas" name="Notas Producidas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar yAxisId="left" dataKey="impactosClipping" name="Clippings Replicados" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="promedioReplicas" 
-                  name="Índice de Replicabilidad" 
-                  stroke="#f59e0b" 
-                  strokeWidth={3} 
-                  dot={{ r: 4, fill: '#f59e0b', strokeWidth: 1, stroke: '#ffffff' }}
-                  activeDot={{ r: 6, fill: '#f59e0b' }} 
-                />
-              </ComposedChart>
+              {segmentMode === 'compare' ? (
+                /* COMPARATIVE VIEW: Local vs Others */
+                <ComposedChart data={monthlyData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+                  <XAxis dataKey="mes" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right" 
+                    stroke="#f59e0b" 
+                    fontSize={11} 
+                    tickLine={false}
+                    tickFormatter={(val) => `${val}x`}
+                    domain={[0, 'auto']}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1e293b', 
+                      borderColor: '#334155', 
+                      borderRadius: '8px', 
+                      fontSize: '12px',
+                      color: '#f8fafc' 
+                    }} 
+                    formatter={(value, name) => {
+                      if (name.includes('Índice')) return [`${value}x por nota`, name];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                  <Bar yAxisId="left" dataKey="clippingsLocal" name="Clippings Locales" fill="#0284c7" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="left" dataKey="clippingsOtros" name="Clippings Otros Medios (Chubut/Nac/Chile)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Line 
+                    yAxisId="right" 
+                    type="monotone" 
+                    dataKey="indiceLocal" 
+                    name="Índice Réplica Local" 
+                    stroke="#0284c7" 
+                    strokeWidth={2.5} 
+                    dot={{ r: 3, fill: '#0284c7' }} 
+                  />
+                  <Line 
+                    yAxisId="right" 
+                    type="monotone" 
+                    dataKey="indiceOtros" 
+                    name="Índice Réplica Otros" 
+                    stroke="#f59e0b" 
+                    strokeWidth={2.5} 
+                    dot={{ r: 3, fill: '#f59e0b' }} 
+                  />
+                </ComposedChart>
+              ) : (
+                /* SINGLE SEGMENT VIEW */
+                <ComposedChart data={monthlyData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+                  <XAxis dataKey="mes" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right" 
+                    stroke="#f59e0b" 
+                    fontSize={11} 
+                    tickLine={false}
+                    tickFormatter={(val) => `${val}x`}
+                    domain={[0, 'auto']}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1e293b', 
+                      borderColor: '#334155', 
+                      borderRadius: '8px', 
+                      fontSize: '12px',
+                      color: '#f8fafc' 
+                    }} 
+                    formatter={(value, name) => {
+                      if (name.includes('Índice')) return [`${value}x por nota`, name];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                  <Bar yAxisId="left" dataKey="notasEmitidas" name="Notas Producidas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="left" dataKey={segmentConfig.dataKeyBar} name={segmentConfig.barName} fill={segmentConfig.barColor} radius={[4, 4, 0, 0]} />
+                  <Line 
+                    yAxisId="right" 
+                    type="monotone" 
+                    dataKey={segmentConfig.dataKeyLine} 
+                    name={segmentConfig.lineName} 
+                    stroke={segmentConfig.lineColor} 
+                    strokeWidth={3} 
+                    dot={{ r: 4, fill: segmentConfig.lineColor, strokeWidth: 1, stroke: '#ffffff' }}
+                    activeDot={{ r: 6, fill: segmentConfig.lineColor }} 
+                  />
+                </ComposedChart>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
