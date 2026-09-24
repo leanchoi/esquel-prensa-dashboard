@@ -25,7 +25,8 @@ import {
   Legend,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  ComposedChart
 } from 'recharts';
 
 export default function OverviewDashboard({ notes, clippings, mediaList, onSelectNote, onSelectMedia }) {
@@ -226,14 +227,41 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
                 Picos de cobertura en Abril (Eclipse 2027) y Septiembre (FIT + Primavera)
               </p>
             </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                Eje Izq: Volumen
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                Eje Der: Índice Replicabilidad (x)
+              </span>
+            </div>
           </div>
 
           <div className="h-72 mt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <ComposedChart data={monthlyData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
                 <XAxis dataKey="mes" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                
+                {/* Eje Y Principal (Izquierdo): Volumen de Notas y Clippings */}
+                <YAxis 
+                  yAxisId="left" 
+                  stroke="#94a3b8" 
+                  fontSize={11} 
+                  tickLine={false} 
+                />
+
+                {/* Eje Y Secundario (Derecho): Índice de Replicabilidad / Correlación */}
+                <YAxis 
+                  yAxisId="right" 
+                  orientation="right" 
+                  stroke="#f59e0b" 
+                  fontSize={11} 
+                  tickLine={false}
+                  tickFormatter={(val) => `${val}x`}
+                  domain={[0, 'auto']}
+                />
+
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#1e293b', 
@@ -242,11 +270,27 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
                     fontSize: '12px',
                     color: '#f8fafc' 
                   }} 
+                  formatter={(value, name) => {
+                    if (name === 'Índice de Replicabilidad') {
+                      return [`${value}x (impactos por gacetilla)`, name];
+                    }
+                    return [value, name];
+                  }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                <Bar dataKey="notasEmitidas" name="Notas Producidas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="impactosClipping" name="Clippings Replicados" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Bar yAxisId="left" dataKey="notasEmitidas" name="Notas Producidas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="impactosClipping" name="Clippings Replicados" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="promedioReplicas" 
+                  name="Índice de Replicabilidad" 
+                  stroke="#f59e0b" 
+                  strokeWidth={3} 
+                  dot={{ r: 4, fill: '#f59e0b', strokeWidth: 1, stroke: '#ffffff' }}
+                  activeDot={{ r: 6, fill: '#f59e0b' }} 
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>

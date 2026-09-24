@@ -5,6 +5,7 @@ import OverviewDashboard from './components/OverviewDashboard';
 import MediaMonitor from './components/MediaMonitor';
 import SuccessFailureMatrix from './components/SuccessFailureMatrix';
 import PressManagementPanel from './components/PressManagementPanel';
+import AdvancedExplorer from './components/AdvancedExplorer';
 import MethodologyAuditModal from './components/MethodologyAuditModal';
 import NoteDetailModal from './components/NoteDetailModal';
 import LoginScreen, { USERS_CONFIG } from './components/LoginScreen';
@@ -213,6 +214,15 @@ export default function App() {
             onSelectMedia={() => {
               setActiveTab('media');
             }}
+          />
+        )}
+
+        {activeTab === 'explorer' && (
+          <AdvancedExplorer
+            notes={notes}
+            clippings={clippings}
+            mediaList={mediaList}
+            onSelectNote={(note) => setSelectedNote(note)}
           />
         )}
 

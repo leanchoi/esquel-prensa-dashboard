@@ -10,7 +10,8 @@ import {
   Info,
   Download,
   LogOut,
-  UserCheck
+  UserCheck,
+  ListFilter
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -27,6 +28,7 @@ export default function Navbar({
 }) {
   const navItems = [
     { id: 'dashboard', label: 'Tablero General', icon: BarChart3, badge: `${notesCount} notas` },
+    { id: 'explorer', label: 'Explorador & Filtros', icon: ListFilter, badge: 'Multifiltro' },
     { id: 'media', label: 'Monitor de Medios', icon: Newspaper, badge: 'Locales y Regionales' },
     { id: 'matrix', label: 'Matriz Éxito / Falla', icon: Target, badge: 'Análisis Causal' },
     { id: 'management', label: 'Panel de Carga y Gestión', icon: PlusCircle, badge: 'Prensa' },
