@@ -7,11 +7,12 @@ import SuccessFailureMatrix from './components/SuccessFailureMatrix';
 import PressManagementPanel from './components/PressManagementPanel';
 import MethodologyAuditModal from './components/MethodologyAuditModal';
 import NoteDetailModal from './components/NoteDetailModal';
+import LoginScreen, { USERS_CONFIG } from './components/LoginScreen';
 
 export default function App() {
   // Theme state
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('esquel_theme') === 'dark' || true;
+    return localStorage.getItem('esquel_theme') !== 'light';
   });
 
   useEffect(() => {
@@ -23,6 +24,28 @@ export default function App() {
       localStorage.setItem('esquel_theme', 'light');
     }
   }, [darkMode]);
+
+  // Auth state
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const savedUser = sessionStorage.getItem('yagoneitor_user') || localStorage.getItem('yagoneitor_user');
+      if (savedUser) return JSON.parse(savedUser);
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  });
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    sessionStorage.setItem('yagoneitor_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    sessionStorage.removeItem('yagoneitor_user');
+    localStorage.removeItem('yagoneitor_user');
+  };
 
   // Main Active Tab
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -120,7 +143,7 @@ export default function App() {
   const handleExportData = () => {
     const dataToExport = {
       exportedAt: new Date().toISOString(),
-      source: 'Sistema de Gestión, Prensa y Clipping - Subsecretaría de Esquel',
+      source: 'YAGONEITOR 3000 - Prensa Esquel',
       notes,
       clippings,
       mediaList
@@ -129,7 +152,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `prensa_esquel_export_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `yagoneitor_esquel_export_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -153,10 +176,15 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `esquel_${type}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `yagoneitor_${type}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // If user is not logged in, show Login Screen
+  if (!currentUser) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
@@ -170,6 +198,8 @@ export default function App() {
         onExportData={handleExportData}
         notesCount={notes.length}
         clippingsCount={clippings.length}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Container */}
@@ -180,7 +210,7 @@ export default function App() {
             clippings={clippings}
             mediaList={mediaList}
             onSelectNote={(note) => setSelectedNote(note)}
-            onSelectMedia={(mediaName) => {
+            onSelectMedia={() => {
               setActiveTab('media');
             }}
           />
@@ -217,7 +247,13 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 text-center text-xs text-slate-500 dark:text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>Subsecretaría de Turismo de Esquel • Área de Prensa y Comunicación</span>
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-slate-700 dark:text-slate-300">YAGONEITOR 3000</span>
+            <span>•</span>
+            <span className="text-blue-600 dark:text-blue-400 font-semibold">Prensa Esquel</span>
+            <span>•</span>
+            <span>Subsecretaría de Turismo</span>
+          </div>
           <span className="text-[11px]">83 Gacetillas • 371 Clippings • 150 Medios Auditados</span>
         </div>
       </footer>
