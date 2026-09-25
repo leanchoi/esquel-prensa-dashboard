@@ -17,7 +17,9 @@ import {
   FileText,
   CheckCircle2,
   ListFilter,
-  Eye
+  Eye,
+  X,
+  ArrowUpCircle
 } from 'lucide-react';
 
 const MONTH_ORDER = {
@@ -26,7 +28,7 @@ const MONTH_ORDER = {
   'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12
 };
 
-export default function AdvancedExplorer({ notes, clippings, mediaList, onSelectNote }) {
+export default function AdvancedExplorer({ notes, clippings, mediaList, onSelectNote, showToast }) {
   // View Mode: 'notes' (grouped by press release) or 'clippings' (individual media hits)
   const [viewMode, setViewMode] = useState('notes');
 
@@ -183,6 +185,7 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
     a.download = `yagoneitor_filtrado_${viewMode}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    if (showToast) showToast(`CSV filtrado de ${viewMode === 'notes' ? 'gacetillas' : 'publicaciones'} descargado`, 'success');
   };
 
   // Toggle header sort helper
@@ -268,8 +271,17 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar título, tema o palabra clave..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-8 pr-8 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                title="Limpiar búsqueda"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Month Range / Filter */}
@@ -364,6 +376,49 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
           </div>
         </div>
 
+        {/* Active Filter Dismissible Pills */}
+        {(Boolean(searchQuery) || selectedMonth !== 'ALL' || selectedScope !== 'ALL' || (selectedThematic !== 'ALL' && viewMode === 'notes') || selectedMedia !== 'ALL') && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-2.5 pb-1 border-t border-slate-100 dark:border-slate-800 text-xs">
+            <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Filtros activos:</span>
+            {searchQuery && (
+              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30">
+                <span>"{searchQuery}"</span>
+                <button onClick={() => setSearchQuery('')} className="hover:text-rose-500 p-0.5"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {selectedMonth !== 'ALL' && (
+              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
+                <span>Mes: {selectedMonth}</span>
+                <button onClick={() => setSelectedMonth('ALL')} className="hover:text-rose-500 p-0.5"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {selectedScope !== 'ALL' && (
+              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30">
+                <span>Alcance: {selectedScope}</span>
+                <button onClick={() => setSelectedScope('ALL')} className="hover:text-rose-500 p-0.5"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {selectedThematic !== 'ALL' && viewMode === 'notes' && (
+              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
+                <span>Eje: {selectedThematic}</span>
+                <button onClick={() => setSelectedThematic('ALL')} className="hover:text-rose-500 p-0.5"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            {selectedMedia !== 'ALL' && (
+              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 border border-sky-200 dark:border-sky-500/30">
+                <span>Medio: {selectedMedia}</span>
+                <button onClick={() => setSelectedMedia('ALL')} className="hover:text-rose-500 p-0.5"><X className="w-3 h-3" /></button>
+              </span>
+            )}
+            <button
+              onClick={handleResetFilters}
+              className="text-[11px] text-rose-600 dark:text-rose-400 hover:underline font-bold ml-1.5"
+            >
+              Restablecer todo
+            </button>
+          </div>
+        )}
+
         {/* Results summary & Reset Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div className="flex items-center space-x-2">
@@ -410,9 +465,9 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
               No se encontraron gacetillas con los filtros seleccionados. Prueba limpiar los filtros.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[68vh] overflow-y-auto">
               <table className="w-full text-left text-xs table-compact">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 select-none">
+                <thead className="sticky top-0 bg-slate-50/98 dark:bg-slate-900/98 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 select-none z-10">
                   <tr>
                     <th 
                       onClick={() => handleToggleSort('date-asc', 'date-desc')}
@@ -447,23 +502,23 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
                     <th className="font-semibold text-right whitespace-nowrap">Enlaces</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                   {filteredNotes.map((n) => (
                     <tr 
                       key={n.id} 
                       onClick={() => onSelectNote(n)}
-                      className="hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors cursor-pointer"
+                      className="hover:bg-blue-50/50 dark:hover:bg-blue-950/25 transition-colors cursor-pointer group"
                     >
                       <td className="text-slate-500 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap font-medium">
                         {n.month}
                       </td>
                       <td className="font-bold text-slate-900 dark:text-white max-w-sm">
-                        <span className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                        <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {n.title}
                         </span>
                       </td>
                       <td className="whitespace-nowrap">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-medium">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800/90 dark:text-slate-300 font-medium border border-slate-200/80 dark:border-slate-700/60">
                           {n.thematicGroup}
                         </span>
                       </td>
@@ -471,11 +526,11 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
                         {n.format}
                       </td>
                       <td className="text-center whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-black text-xs ${
-                          n.clippingCount >= 10 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
-                          n.clippingCount >= 3 ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' :
-                          n.clippingCount >= 1 ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' :
-                          'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-black text-xs border ${
+                          n.clippingCount >= 10 ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30' :
+                          n.clippingCount >= 3 ? 'bg-blue-50 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30' :
+                          n.clippingCount >= 1 ? 'bg-slate-100 text-slate-800 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700' :
+                          'bg-rose-50 text-rose-800 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
                         }`}>
                           {n.clippingCount} medios
                         </span>
@@ -544,9 +599,9 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
               No se encontraron publicaciones con los filtros seleccionados.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[68vh] overflow-y-auto">
               <table className="w-full text-left text-xs table-compact">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 select-none">
+                <thead className="sticky top-0 bg-slate-50/98 dark:bg-slate-900/98 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 select-none z-10">
                   <tr>
                     <th 
                       onClick={() => handleToggleSort('date-asc', 'date-desc')}
@@ -577,7 +632,7 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
                     <th className="font-semibold text-right whitespace-nowrap">Enlace a la Publicación</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                   {filteredClippings.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="text-slate-500 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap font-medium">
@@ -593,11 +648,11 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
                         {c.theme}
                       </td>
                       <td className="whitespace-nowrap">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                          c.category.includes('Local') ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' :
-                          c.category.includes('Provincial') ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' :
-                          c.category.includes('Binacional') ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
-                          'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium border ${
+                          c.category.includes('Local') ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30' :
+                          c.category.includes('Provincial') ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30' :
+                          c.category.includes('Binacional') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30' :
+                          'bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30'
                         }`}>
                           {c.category}
                         </span>
@@ -629,6 +684,16 @@ export default function AdvancedExplorer({ notes, clippings, mediaList, onSelect
           )
         )}
       </div>
+
+      {/* Floating Scroll to Top button */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-6 left-6 z-30 p-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-xl border border-slate-200 dark:border-slate-700 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 dark:hover:border-blue-600 transition-all opacity-80 hover:opacity-100 hidden sm:flex items-center space-x-1.5 text-xs font-semibold"
+        title="Subir al inicio"
+      >
+        <ArrowUpCircle className="w-4 h-4" />
+        <span className="text-[11px]">Subir</span>
+      </button>
     </div>
   );
 }

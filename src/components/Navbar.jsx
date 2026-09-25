@@ -7,11 +7,13 @@ import {
   Moon, 
   Sun, 
   FileText, 
-  Info,
-  Download,
-  LogOut,
-  UserCheck,
-  ListFilter
+  Info, 
+  Download, 
+  LogOut, 
+  UserCheck, 
+  ListFilter,
+  Search,
+  Command
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -81,11 +83,24 @@ export default function Navbar({
           </nav>
 
           {/* Action Tools & User Profile */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            {/* Quick Search Shortcut Button */}
+            <button
+              onClick={() => setActiveTab('explorer')}
+              title="Buscar gacetillas y clippings (Ctrl + K o /)"
+              className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 dark:hover:border-blue-700 transition-all shadow-2xs"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">Buscar...</span>
+              <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500">
+                Ctrl K
+              </kbd>
+            </button>
+
             {/* User Badge */}
             {currentUser && (
               <div className="hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-                <UserCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <UserCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                 <div className="text-left">
                   <span className="font-bold text-slate-800 dark:text-slate-200 block text-[11px] leading-tight capitalize">
                     {currentUser.username}
@@ -99,7 +114,7 @@ export default function Navbar({
 
             <button
               onClick={onOpenAudit}
-              title="Criterios de Depuración y Auditoría"
+              title="Criterios de Depuración y Auditoría Metodológica"
               className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
             >
               <Info className="w-4 h-4 text-sky-600 dark:text-sky-400" />
@@ -108,7 +123,7 @@ export default function Navbar({
 
             <button
               onClick={onExportData}
-              title="Exportar base completa (JSON)"
+              title="Exportar base de datos completa (JSON)"
               className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
             >
               <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -136,8 +151,8 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Mobile Tabs */}
-        <div className="flex md:hidden overflow-x-auto py-2 border-t border-slate-100 dark:border-slate-800 space-x-2 no-scrollbar">
+        {/* Mobile Tabs Bar with smooth horizontal scroll and active pill */}
+        <div className="flex md:hidden overflow-x-auto py-2.5 border-t border-slate-100 dark:border-slate-800 space-x-1.5 no-scrollbar scroll-smooth">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -145,13 +160,13 @@ export default function Navbar({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25 ring-1 ring-blue-500'
+                    : 'bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span>{item.label}</span>
               </button>
             );

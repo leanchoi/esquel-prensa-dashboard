@@ -1,35 +1,58 @@
-import React from 'react';
-import { X, ExternalLink, Share2, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ExternalLink, Share2, Calendar, FileText, CheckCircle2, Copy, Check } from 'lucide-react';
 
-export default function NoteDetailModal({ note, onClose }) {
+export default function NoteDetailModal({ note, onClose, showToast }) {
+  const [copied, setCopied] = useState(false);
   if (!note) return null;
 
+  const handleCopyTitle = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(note.title);
+    setCopied(true);
+    if (showToast) showToast('Título copiado al portapapeles', 'success');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+      onClick={onClose}
+    >
       <div 
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl overflow-y-auto modal-mobile-safe shadow-2xl flex flex-col"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl max-h-[90dvh] shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur z-10">
-          <div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              {note.thematicGroup}
-            </span>
-            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white mt-1.5 leading-snug">
+        {/* Header - Fixed & safe from notch / Safari navigation */}
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between bg-white/98 dark:bg-slate-900/98 backdrop-blur z-10 shrink-0">
+          <div className="pr-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80">
+                {note.thematicGroup}
+              </span>
+              <button
+                onClick={handleCopyTitle}
+                title="Copiar título"
+                className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 inline-flex items-center space-x-1 p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                <span className="text-[10px]">{copied ? 'Copiado' : 'Copiar'}</span>
+              </button>
+            </div>
+            <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1.5 leading-snug">
               {note.title}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-3 shrink-0"
+            aria-label="Cerrar modal"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4 text-xs text-slate-600 dark:text-slate-300">
+        <div className="p-4 sm:p-5 space-y-4 text-xs text-slate-600 dark:text-slate-300 overflow-y-auto flex-1 overscroll-contain">
           <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Formato Periodístico</span>
@@ -135,7 +158,7 @@ export default function NoteDetailModal({ note, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"

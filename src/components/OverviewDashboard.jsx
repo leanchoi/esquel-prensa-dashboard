@@ -261,7 +261,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
       {/* KPI Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 border-t-4 border-t-blue-500 shadow-2xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Notas Emitidas</span>
             <div className="p-2 bg-blue-50 dark:bg-blue-950/60 rounded-lg text-blue-600 dark:text-blue-400">
@@ -270,7 +270,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
           </div>
           <div className="mt-2 flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{totalNotes}</span>
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
+            <span className="text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-800/40">
               Ene - Sep 2026
             </span>
           </div>
@@ -280,7 +280,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
         </div>
 
         {/* KPI 2 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 border-t-4 border-t-indigo-500 shadow-2xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Impactos en Medios</span>
             <div className="p-2 bg-indigo-50 dark:bg-indigo-950/60 rounded-lg text-indigo-600 dark:text-indigo-400">
@@ -289,7 +289,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
           </div>
           <div className="mt-2 flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{totalClippings}</span>
-            <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded">
+            <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-800/40">
               {avgMultiplier}x réplica media
             </span>
           </div>
@@ -299,7 +299,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
         </div>
 
         {/* KPI 3 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 border-t-4 border-t-emerald-500 shadow-2xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tasa Replicabilidad</span>
             <div className="p-2 bg-emerald-50 dark:bg-emerald-950/60 rounded-lg text-emerald-600 dark:text-emerald-400">
@@ -310,7 +310,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
               {Math.round(((highReplicability + mediumReplicability) / (totalNotes || 1)) * 100)}%
             </span>
-            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
+            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/40">
               {highReplicability} masivas
             </span>
           </div>
@@ -320,7 +320,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
         </div>
 
         {/* KPI 4 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 border-t-4 border-t-amber-500 shadow-2xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Red de Difusión</span>
             <div className="p-2 bg-amber-50 dark:bg-amber-950/60 rounded-lg text-amber-600 dark:text-amber-400">
@@ -329,7 +329,7 @@ export default function OverviewDashboard({ notes, clippings, mediaList, onSelec
           </div>
           <div className="mt-2 flex items-baseline space-x-2">
             <span className="text-3xl font-extrabold text-slate-900 dark:text-white">{mediaList.length}</span>
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded">
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded border border-amber-200/60 dark:border-amber-800/40">
               Medios únicos
             </span>
           </div>

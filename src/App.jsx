@@ -9,6 +9,7 @@ import AdvancedExplorer from './components/AdvancedExplorer';
 import MethodologyAuditModal from './components/MethodologyAuditModal';
 import NoteDetailModal from './components/NoteDetailModal';
 import LoginScreen from './components/LoginScreen';
+import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -93,6 +94,36 @@ export default function App() {
     localStorage.removeItem('yagoneitor_user');
   };
 
+  // Toast Notification System
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type, id: Date.now() });
+  };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  // Global Keyboard Shortcuts (Ctrl+K or '/' to jump to Explorer)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const activeTag = document.activeElement?.tagName;
+      const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag);
+      if ((e.ctrlKey && e.key.toLowerCase() === 'k') || (e.key === '/' && !isInput)) {
+        e.preventDefault();
+        setActiveTab('explorer');
+        showToast('Atajo activado: Explorador y Filtros', 'info');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Main Active Tab
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -143,16 +174,19 @@ export default function App() {
   // Handlers for Add / Delete
   const handleAddNote = (newNote) => {
     setNotes(prev => [newNote, ...prev]);
+    showToast('Gacetilla registrada exitosamente en el sistema', 'success');
   };
 
   const handleDeleteNote = (noteId) => {
     if (window.confirm('¿Seguro que deseas eliminar esta gacetilla del registro?')) {
       setNotes(prev => prev.filter(n => n.id !== noteId));
+      showToast('Gacetilla eliminada del registro', 'info');
     }
   };
 
   const handleAddClipping = (newClip) => {
     setClippings(prev => [newClip, ...prev]);
+    showToast(`Nuevo clipping registrado: ${newClip.media}`, 'success');
 
     // Recalculate media list count dynamically
     setMediaList(prev => {
@@ -182,6 +216,7 @@ export default function App() {
   const handleDeleteClipping = (clipId) => {
     if (window.confirm('¿Seguro que deseas eliminar este clipping?')) {
       setClippings(prev => prev.filter(c => c.id !== clipId));
+      showToast('Clipping eliminado del registro', 'info');
     }
   };
 
@@ -201,6 +236,7 @@ export default function App() {
     a.download = `yagoneitor_esquel_export_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    showToast('Base de datos exportada en formato JSON', 'success');
   };
 
   // Export CSV for notes or clippings
@@ -225,6 +261,7 @@ export default function App() {
     a.download = `yagoneitor_${type}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    showToast(`Archivo CSV de ${type === 'notes' ? 'gacetillas' : 'clippings'} descargado`, 'success');
   };
 
   // If user is not logged in, show Login Screen
@@ -269,6 +306,7 @@ export default function App() {
             clippings={clippings}
             mediaList={mediaList}
             onSelectNote={(note) => setSelectedNote(note)}
+            showToast={showToast}
           />
         )}
 
@@ -323,7 +361,24 @@ export default function App() {
       <NoteDetailModal
         note={selectedNote}
         onClose={() => setSelectedNote(null)}
+        showToast={showToast}
       />
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-50 flex items-center space-x-2.5 px-4 py-3 rounded-2xl shadow-2xl border text-xs font-semibold backdrop-blur-md transition-all bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border-slate-200/80 dark:border-slate-700/80 ring-1 ring-black/5 dark:ring-white/10">
+          {toast.type === 'success' && <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />}
+          {toast.type === 'info' && <Info className="w-4 h-4 text-blue-500 shrink-0" />}
+          {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />}
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-2 shrink-0 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       </div>
     </ErrorBoundary>
   );
