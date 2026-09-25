@@ -12,7 +12,8 @@ import {
   Globe,
   MapPin,
   Mountain,
-  Scale
+  Scale,
+  Compass
 } from 'lucide-react';
 import {
   BarChart,

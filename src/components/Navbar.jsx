@@ -91,7 +91,7 @@ export default function Navbar({
                     {currentUser.username}
                   </span>
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 block leading-none truncate max-w-[90px]">
-                    {currentUser.role.split(' ')[0]}
+                    {(currentUser.role || 'Usuario').split(' ')[0]}
                   </span>
                 </div>
               </div>
